@@ -67,3 +67,36 @@ curl -fsSL https://get.casaos.io | sudo bash
 
 echo ">>> All installations complete!"
 echo "NOTE: Log out and back in (or run: newgrp docker) to use Docker without sudo."
+
+echo ">>> Installing Tailscale..."
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo systemctl enable --now tailscaled
+
+echo ">>> Bringing up Tailscale and advertising exit node..."
+sudo tailscale up --accept-dns=true --advertise-exit-node
+
+
+
+
+echo ">>> Setting up Navidrome in /opt/navidrome..."
+sudo mkdir -p /opt/navidrome
+cd /opt/navidrome
+
+# Create docker-compose.yml for Navidrome
+cat <<EOF | sudo tee /opt/navidrome/docker-compose.yml
+version: "3.8"
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    user: "\${UID}:\${GID}"
+    ports:
+      - "4533:4533"
+    volumes:
+      - ./data:/data
+      - ./music:/music
+    restart: unless-stopped
+EOF
+
+# Start Navidrome
+sudo docker compose up -d
